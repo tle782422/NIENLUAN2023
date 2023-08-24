@@ -1,0 +1,7 @@
+com\demo\Application.class
+com\demo\entities\Product$ProductBuilder.class
+com\demo\web\ProductRestController.class
+com\demo\entities\Product.class
+com\demo\StreamLambdaHandler.class
+com\demo\controller\PingController.class
+com\demo\repositories\ProductRepository.class
