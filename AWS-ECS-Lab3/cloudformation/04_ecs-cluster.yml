@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template create a fargate cluster.
+Parameters: 
+  EnvironmentName: 
+    Type: String
+    Default: msdemo
+    Description: Name of the environment.
+
+    
+Resources:
+  # ECS Resources
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Join [ '-', [ !Ref 'EnvironmentName', 'Cluster' ] ]    
+
+  FargateContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the Fargate containers
+      VpcId:
+        Fn::ImportValue: !Join [':', [!Ref 'EnvironmentName', 'VPCId']]
+  EcsSecurityGroupIngressFromPublicALB:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress from the public ALB
+      GroupId: !Ref 'FargateContainerSecurityGroup'
+      IpProtocol: -1
+      SourceSecurityGroupId: 
+        Fn::ImportValue: !Join [':', [!Ref 'EnvironmentName', 'PublicLoadBalancerSG']]
+
+
+  # Đây là vai trò IAM cho phép ECS quản lý tài nguyên trên
+  # tài khoản thay mặt bạn, chẳng hạn như cập nhật bộ cân bằng tải của bạn với
+  # thông tin chi tiết về vị trí của vùng chứa của bạn để lưu lượng truy cập có thể tiếp cận bạn
+  # containers.
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              # Quy tắc cho phép ECS gắn giao diện mạng vào phiên bản
+              # thay mặt bạn để chế độ mạng awsvpc hoạt động bình thường
+              - 'ec2:AttachNetworkInterface'
+              - 'ec2:CreateNetworkInterface'
+              - 'ec2:CreateNetworkInterfacePermission'
+              - 'ec2:DeleteNetworkInterface'
+              - 'ec2:DeleteNetworkInterfacePermission'
+              - 'ec2:Describe*'
+              - 'ec2:DetachNetworkInterface'
+
+              # Quy tắc cho phép ECS thay mặt bạn cập nhật cân bằng tải
+              # với thông tin về cách gửi lưu lượng truy cập đến containers của bạn
+              - 'elasticloadbalancing:DeregisterInstancesFromLoadBalancer'
+              - 'elasticloadbalancing:DeregisterTargets'
+              - 'elasticloadbalancing:Describe*'
+              - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
+              - 'elasticloadbalancing:RegisterTargets'
+            Resource: '*'
+
+  # Đây là vai trò được chính các nhiệm vụ ECS sử dụng.
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                # Cho phép tasks ECS tải xuống hình ảnh từ ECR
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+
+                # Cho phép tasks ECS tải nhật ký lên CloudWatch
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+Outputs:
+  ClusterName:
+    Description: The name of the ECS cluster
+    Value: !Ref 'ECSCluster'
+    Export:
+      Name: !Join [ ':', [ !Ref 'EnvironmentName', 'ClusterName' ] ]
+  ECSRole:
+    Description: The ARN of the ECS role
+    Value: !GetAtt 'ECSRole.Arn'
+    Export:
+      Name: !Join [ ':', [ !Ref 'EnvironmentName', 'ECSRole' ] ]
+  ECSTaskExecutionRole:
+    Description: The ARN of the ECS role
+    Value: !GetAtt 'ECSTaskExecutionRole.Arn'
+    Export:
+      Name: !Join [ ':', [ !Ref 'EnvironmentName', 'ECSTaskExecutionRole' ] ]
+  FargateContainerSecurityGroup:
+    Description: The ARN of the Farget Container SG
+    Value: !Ref 'FargateContainerSecurityGroup'
+    Export:
+      Name: !Join [':', [!Ref 'EnvironmentName', 'FargateContainerSecurityGroup']]
+
+
+                
+

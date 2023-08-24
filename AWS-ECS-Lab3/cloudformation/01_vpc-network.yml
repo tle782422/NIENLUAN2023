@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This stack creates a VPC with both public and private subnets. 
+Parameters: 
+  EnvironmentName: 
+    Type: String
+    Default: msdemo
+    Description: Name of the environment.
+
+Mappings:
+  # Giá trị cứng cho mặt nạ mạng con. Những mặt nạ này xác định
+  # phạm vi địa chỉ IP nội bộ có thể được chỉ định.
+  # VPC có thể có tất cả IP từ 10.0.0.0 đến 10.0.255.255
+  # Chúng tôi tạo bốn mạng con với các CIDR
+  #
+  # 10.0.0.0 - 10.0.0.255 => public 1
+  # 10.0.1.0 - 10.0.1.255 => public 2
+  # 10.0.100.0 - 10.0.100.255 => private 1
+  # 10.0.101.0 - 10.0.101.255 => private 2
+  #
+  SubnetConfig:
+    VPC:
+      CIDR: '10.0.0.0/16'
+    PublicOne:
+      CIDR: '10.0.0.0/24'
+    PublicTwo:
+      CIDR: '10.0.1.0/24'
+    PrivateOne:
+      CIDR: '10.0.100.0/24'
+    PrivateTwo:
+      CIDR: '10.0.101.0/24'
+Resources:
+  # VPC trong đó các container sẽ được nối mạng.
+  # Nó có hai mạng con công khai và hai mạng con riêng tư.
+  # Ta phân phối các mạng con trên hai mạng con khả dụng đầu tiên
+  # cho khu vực, để có tính sẵn sàng cao.
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap ['SubnetConfig', 'VPC', 'CIDR']
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, Vpc] ] 
+
+  # Hai mạng con công cộng, nơi các container có thể có địa chỉ IP công cộng
+  PublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 0
+         - Fn::GetAZs: {Ref: 'AWS::Region'}
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PublicOne', 'CIDR']
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PublicSubnetOne] ]       
+  PublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 1
+         - Fn::GetAZs: {Ref: 'AWS::Region'}
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PublicTwo', 'CIDR']
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PublicSubnetTwo] ]       
+
+  # Hai mạng con riêng tư trong đó các container sẽ chỉ có mạng riêng tư
+  # Địa chỉ IP và chỉ các thành viên khác trong nhóm mới có thể truy cập được
+  # VPC
+  PrivateSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 0
+         - Fn::GetAZs: {Ref: 'AWS::Region'}
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PrivateOne', 'CIDR']
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PrivateSubnetOne] ]       
+  PrivateSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 1
+         - Fn::GetAZs: {Ref: 'AWS::Region'}
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PrivateTwo', 'CIDR']
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PrivateSubnetTwo] ]       
+
+  # Thiết lập tài nguyên mạng cho các mạng con công cộng. Hộp đựng
+  # trong mạng con công cộng có địa chỉ IP công cộng và bảng định tuyến
+  # gửi lưu lượng mạng qua cổng internet.
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PublicRouteTable] ]        
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'      
+      Tags:
+      - Key: Name
+        Value: !Join [ '-', [!Ref EnvironmentName, PrivateRouteTable] ]        
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref 'PublicRouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref 'InternetGateway'
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetOne
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetTwo
+      RouteTableId: !Ref PublicRouteTable
+  PrivateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetOne
+      RouteTableId: !Ref PrivateRouteTable
+  PrivateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetTwo
+      RouteTableId: !Ref PrivateRouteTable      
+
+# Đây là các giá trị do mẫu CloudFormation xuất ra. Hãy cẩn thận
+# về việc thay đổi bất kỳ mục nào trong số chúng, vì chúng được xuất với mục đích cụ thể
+# tên để các mẫu CF liên quan đến task khác có thể sử dụng chúng.
+Outputs:
+  VPCId:
+    Description: The ID of the VPC that this stack is deployed in
+    Value: !Ref 'VPC'
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'VPCId' ] ]
+  PublicSubnetOne:
+    Description: Public subnet one
+    Value: !Ref 'PublicSubnetOne'
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PublicSubnetOne' ] ]
+  PublicSubnetTwo:
+    Description: Public subnet two
+    Value: !Ref 'PublicSubnetTwo'
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PublicSubnetTwo' ] ]
+  PrivateSubnetOne:
+    Description: Private subnet one
+    Value: !Ref 'PrivateSubnetOne'
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PrivateSubnetOne' ] ]
+  PrivateSubnetTwo:
+    Description: Private subnet two
+    Value: !Ref 'PrivateSubnetTwo'
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PrivateSubnetTwo' ] ]
+  PublicRouteTable:
+    Description: PublicRouteTable
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PublicRouteTable' ] ]    
+  PrivateRouteTable:
+    Description: PrivateRouteTable
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: !Join [ ':', [ !Ref EnvironmentName, 'PrivateRouteTable' ] ]        
