@@ -4,7 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a72a6171-83d3-4c38-9883-d68fccfae8cd" name="Default Changelist" comment="" />
+    <list default="true" id="a72a6171-83d3-4c38-9883-d68fccfae8cd" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.jar" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mvnw" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mvnw.cmd" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/AwsEc2Lab1Application.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/controller/UserController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/entity/User.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/exception/ErrorDetails.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/exception/ResourceNotFoundException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/demo/awsec2lab1/repository/UserRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/demo/awsec2lab1/AwsEc2Lab1ApplicationTests.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -59,7 +75,6 @@
       <workItem from="1691346828380" duration="53000" />
       <workItem from="1692566792981" duration="6726000" />
       <workItem from="1692909805838" duration="86000" />
-      <workItem from="1692912098695" duration="226000" />
     </task>
     <servers />
   </component>
@@ -76,6 +91,5 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>
