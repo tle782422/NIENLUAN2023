@@ -11,7 +11,7 @@ function build() {
 function push() {
     #DOWNLOAD AWS CLI VA TAO IAM (ROLE=AWSEC2CONTAINERFULLACCESS).
     echo "Push images"
-    $(aws ecr get-login --no-include-email --region ap-southeast-2)
+    $(aws ecr get-login --no-include-email --region us-east-1)
 
     docker tag auth-jwt-service:latest 724605254105.dkr.ecr.us-east-1.amazonaws.com/auth-jwt-service:latest
     docker tag customer-service:latest 724605254105.dkr.ecr.us-east-1.amazonaws.com/customer-service:latest
