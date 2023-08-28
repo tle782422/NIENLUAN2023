@@ -1,5 +1,5 @@
-#!/bin/bash
-
+!/bin/bash
+# Tạo repo trước khi push và lấy link repo
 DOCKER_REPO_URI=724605254105.dkr.ecr.us-east-1.amazonaws.com
 
 
